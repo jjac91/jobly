@@ -121,50 +121,42 @@ describe("GET /jobs", function () {
     expect(resp.statusCode).toEqual(500);
   });
 
-  test("works with minEmployees and MaxEmployess", async function () {
-    const resp = await request(app).get(`/companies?minEmployees=2&maxEmployees=2`);
-    expect(resp.body).toEqual({ companies:
+  test("works with minSalary and hasEquity", async function () {
+    const resp = await request(app).get(`/jobs?minSalary=2&hasEquity=true`);
+    expect(resp.body).toEqual({ jobs:
       [
         {
-          handle: "c2",
-          name: "C2",
-          description: "Desc2",
-          numEmployees: 2,
-          logoUrl: "http://c2.img",
+          id: expect.any(Number),
+          title: "j2",
+          salary: 5,
+          equity: "0.1",
+          companyHandle: "c1",
+        },
+        {
+          id: expect.any(Number),
+          title: "j1",
+          salary: 5,
+          equity: "0.1",
+          companyHandle: "c1",
         },
       ]});
   });
 
   test("works with parameters", async function () {
-      const resp = await request(app).get(`/companies?name=c&minEmployees=1&maxEmployees=2`);
-      expect(resp.body).toEqual({ companies:
+      const resp = await request(app).get(`/jobs?minSalary=2&hasEquity=true&title=1`);
+      expect(resp.body).toEqual({ jobs:
         [
           {
-            handle: "c1",
-            name: "C1",
-            description: "Desc1",
-            numEmployees: 1,
-            logoUrl: "http://c1.img",
-          },
-          {
-            handle: "c2",
-            name: "C2",
-            description: "Desc2",
-            numEmployees: 2,
-            logoUrl: "http://c2.img",
-          },
+            id: expect.any(Number),
+            title: "j1",
+            salary: 5,
+            equity: "0.1",
+            companyHandle: "c1",
+          }
         ]});
     });
-    test("minEmployees must be an number", async function () {
-      const resp = await request(app).get(`/companies?name=Chaldea&minEmployees=kek&maxEmployees=500`);
-      expect(resp.statusCode).toEqual(400);
-    });
-    test("maxEmployees must be an number", async function () {
-      const resp = await request(app).get(`/companies?name=Chaldea&minEmployees=1&maxEmployees=kek`);
-      expect(resp.statusCode).toEqual(400);
-    });
-    test("minEmployees must be lesser", async function () {
-      const resp = await request(app).get(`/companies?name=Chaldea&minEmployees=10000&maxEmployees=500`);
+    test("minSalary must be an number", async function () {
+      const resp = await request(app).get(`/jobs?minSalary=kek`);
       expect(resp.statusCode).toEqual(400);
     });
 });

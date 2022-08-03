@@ -22,28 +22,33 @@ const router = new express.Router();
  * Authorization required: admin
  */
 
-router.post("/", ensureLoggedIn, ensureIsAdmin, async function (req, res, next) {
-  try {
-    const validator = jsonschema.validate(req.body, jobNewSchema);
-    if (!validator.valid) {
-      const errs = validator.errors.map((e) => e.stack);
-      throw new BadRequestError(errs);
-    }
+router.post(
+  "/",
+  ensureLoggedIn,
+  ensureIsAdmin,
+  async function (req, res, next) {
+    try {
+      const validator = jsonschema.validate(req.body, jobNewSchema);
+      if (!validator.valid) {
+        const errs = validator.errors.map((e) => e.stack);
+        throw new BadRequestError(errs);
+      }
 
-    const job = await Job.create(req.body);
-    return res.status(201).json({ job });
-  } catch (err) {
-    return next(err);
+      const job = await Job.create(req.body);
+      return res.status(201).json({ job });
+    } catch (err) {
+      return next(err);
+    }
   }
-});
+);
 
 /** GET /  =>
- *   { companies: [ { handle, name, description, numEmployees, logoUrl }, ...] }
+ *   { jobs: { id, title, salary, equity, company_handle AS "companyHandle"}, ...] }
  *
  * Can filter on provided search filters:
- * - minEmployees
- * - maxEmployees
- * - nameLike (will find case-insensitive, partial matches)
+ * - minSalary
+ * - hasEquity
+ * - title Like (will find case-insensitive, partial matches)
  *
  * Authorization required: none
  */
@@ -53,45 +58,30 @@ router.get("/", async function (req, res, next) {
     if (Object.keys(req.query).length === 0) {
       const jobs = await Job.findAll();
       return res.json({ jobs });
-    }  else {
+    } else {
       let filterParams = {};
-      /** checks if minEmployees is in the query string and adds it to the list of filters. Returns an error if not a number*/
-      if (req.query.minEmployees) {
-        let minEmployees = Number(req.query.minEmployees);
-        if (isNaN(minEmployees)) {
-          return next(new BadRequestError("minEmployees must be a number"));
+      /** checks if minSalary is in the query string and adds it to the list of filters. Returns an error if not a number*/
+      if (req.query.minSalary) {
+        let minSalary = Number(req.query.minSalary);
+        if (isNaN(minSalary)) {
+          return next(new BadRequestError("minSalary must be a number"));
         } else {
-          filterParams.minEmployees = minEmployees;
+          filterParams.minSalary = minSalary;
         }
       }
-      /** checks if maxEmployees is in the query string and adds it to the list of filters. Returns an error if not a number*/
-      if (req.query.maxEmployees) {
-        let maxEmployees = Number(req.query.maxEmployees);
-        if (isNaN(maxEmployees)) {
-          return next(new BadRequestError("maxEmployees must be a number"));
-        } else {
-          filterParams.maxEmployees = maxEmployees;
+      /** checks if hasEquity is in the query string and adds it to the list of filters. Returns an error if not a number*/
+      if (req.query.hasEquity) {
+        if (req.query.hasEquity === "true") {
+          filterParams.hasEquity = true;
         }
-      }
-      /** checks if both minEmployees and maxEmployees are both in the query string. If they are it returns an error if maxEmployees is less than minEmployees*/
-      if (
-        filterParams.minEmployees &&
-        filterParams.maxEmployees &&
-        Number(filterParams.minEmployees) > Number(filterParams.maxEmployees)
-      ) {
-        return next(
-          new BadRequestError(
-            "minEmployees cannot be greater than maxEmployees"
-          )
-        );
       }
       /** checks if name is in the query string and adds it to the list of filters.*/
-      if (req.query.name) {
-        filterParams.name = req.query.name;
+      if (req.query.title) {
+        filterParams.title = req.query.title;
       }
       /** calls the filter search and returns the results*/
-      const companies = await Company.findFiltered(filterParams);
-      return res.json({companies});
+      const jobs = await Job.findFiltered(filterParams);
+      return res.json({ jobs });
     }
   } catch (err) {
     return next(err);
@@ -125,33 +115,43 @@ router.get("/:id", async function (req, res, next) {
  * Authorization required: admin
  */
 
-router.patch("/:id", ensureLoggedIn,ensureIsAdmin, async function (req, res, next) {
-  try {
-    const validator = jsonschema.validate(req.body, jobUpdateSchema);
-    if (!validator.valid) {
-      const errs = validator.errors.map((e) => e.stack);
-      throw new BadRequestError(errs);
-    }
+router.patch(
+  "/:id",
+  ensureLoggedIn,
+  ensureIsAdmin,
+  async function (req, res, next) {
+    try {
+      const validator = jsonschema.validate(req.body, jobUpdateSchema);
+      if (!validator.valid) {
+        const errs = validator.errors.map((e) => e.stack);
+        throw new BadRequestError(errs);
+      }
 
-    const job = await Job.update(req.params.id, req.body);
-    return res.json({ job });
-  } catch (err) {
-    return next(err);
+      const job = await Job.update(req.params.id, req.body);
+      return res.json({ job });
+    } catch (err) {
+      return next(err);
+    }
   }
-});
+);
 
 /** DELETE /[id]  =>  { deleted:id }
  *
  * Authorization: admin
  */
 
-router.delete("/:id", ensureLoggedIn,ensureIsAdmin, async function (req, res, next) {
-  try {
-    await Job.remove(req.params.id);
-    return res.json({ deleted: req.params.id });
-  } catch (err) {
-    return next(err);
+router.delete(
+  "/:id",
+  ensureLoggedIn,
+  ensureIsAdmin,
+  async function (req, res, next) {
+    try {
+      await Job.remove(req.params.id);
+      return res.json({ deleted: req.params.id });
+    } catch (err) {
+      return next(err);
+    }
   }
-});
+);
 
 module.exports = router;
